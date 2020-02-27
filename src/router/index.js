@@ -1,29 +1,43 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import Home from "../views/Home.vue";
+import cookie from "vue-cookies";
 
 Vue.use(VueRouter);
 
 const routes = [
   {
     path: "/",
-    name: "Home",
-    component: Home
+    name: "home",
+    component: () => import("../views/home.vue")
   },
   {
-    path: "/about",
-    name: "About",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "about" */ "../views/About.vue")
+    path: "/login",
+    name: "login",
+    component: () => import("../views/login.vue")
+  },
+  {
+    path: "*",
+    name: "404",
+    redirect: "/"
   }
 ];
 
 const router = new VueRouter({
-  mode: 'history',
+  mode: "history",
   routes
+});
+
+router.beforeEach((to, from, next) => {
+  let token = cookie.get("token");
+  if(to.name === "login") {
+    next();
+  } else {
+    if(token) {
+      next();
+    } else {
+      next("/login");
+    }
+  }
 });
 
 export default router;
