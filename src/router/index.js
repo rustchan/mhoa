@@ -16,6 +16,11 @@ const routes = [
     component: () => import("../views/login.vue")
   },
   {
+    path: "/wxlogin",
+    name: "wxlogin",
+    component: () => import("../views/wxlogin.vue")
+  },
+  {
     path: "*",
     name: "404",
     redirect: "/"
@@ -28,15 +33,23 @@ const router = new VueRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  let token = cookie.get("token");
-  if(to.name === "login") {
-    next();
-  } else {
-    if(token) {
+  //跳转https
+  if (location.protocol !== "https:" && location.hostname !== "localhost") {
+    location.href = "https://" + location.host + location.pathname;
+  }
+  switch (to.name) {
+    case "login":
       next();
-    } else {
-      next("/login");
-    }
+      break;
+    case "wxlogin":
+      next();
+      break;
+    default:
+      if (cookie.get("token")) {
+        next();
+      } else {
+        next("/login");
+      }
   }
 });
 
