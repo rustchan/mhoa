@@ -37,6 +37,17 @@ router.beforeEach((to, from, next) => {
   if (location.protocol !== "https:" && location.hostname !== "localhost") {
     location.href = "https://" + location.host + location.pathname;
   }
+  //检验token有效
+  let token = cookie.get("token");
+  // if (token) {
+  //   let jwt = token.split(".");
+  //   if (jwt.length === 3) {
+  //     let exp = JSON.parse(window.atob(jwt[1])).exp;
+  //     if (exp < new Date().getTime() / 1000) token = null;
+  //   } else token = null;
+  //   if (token == null) cookie.remove("token");
+  // }
+  //过滤路由
   switch (to.name) {
     case "login":
       next();
@@ -45,7 +56,7 @@ router.beforeEach((to, from, next) => {
       next();
       break;
     default:
-      if (cookie.get("token")) {
+      if (token) {
         next();
       } else {
         next("/login");

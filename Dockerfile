@@ -1,6 +1,6 @@
 FROM nginx
 
-ADD ./dist /www
+ADD ./dist /app
 ADD ./nginx.conf /etc/nginx/conf.d/nginx.conf
 
-EXPOSE 8081
+EXPOSE 8001
