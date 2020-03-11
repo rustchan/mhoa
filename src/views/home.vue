@@ -53,7 +53,7 @@
   width: 100%;
   box-shadow: none;
   padding: 15px;
-  height: 100%;
+  height: 44px;
   border-radius: 0;
   color: white;
 }
@@ -122,23 +122,40 @@
         :open-names="opennames"
         theme="dark"
         width="auto"
-        accordion="true"
+        :accordion="true"
         :class="menuitemClasses"
         v-if="!isCollapsed"
         @on-select="sidemenu"
+        ref="sidemenu"
       >
         <template v-for="(menu, key) in menus">
-          <Submenu :name="menu.name" :key="key" v-if="menu.child">
+          <Submenu
+            :name="menu.name"
+            :key="key"
+            v-if="menu.child && menu.isshow"
+          >
             <template slot="title">
               <Icon :type="menu.icon" />
               <span>{{ menu.title }}</span>
             </template>
             <template v-for="(submenu, subkey) in menu.child">
-              <MenuItem :name="submenu.name" :key="subkey">
+              <MenuItem
+                :name="submenu.name"
+                :key="subkey"
+                v-if="submenu.isshow"
+              >
                 <span>{{ submenu.title }}</span>
               </MenuItem>
             </template>
           </Submenu>
+          <MenuItem
+            :name="menu.name"
+            :key="key"
+            v-if="!menu.child && menu.isshow"
+          >
+            <Icon :type="menu.icon" />
+            <span>{{ menu.title }}</span>
+          </MenuItem>
         </template>
       </Menu>
       <div v-if="isCollapsed" class="dropmenu">
@@ -146,7 +163,7 @@
           <Dropdown
             transfer
             placement="right-start"
-            v-if="menu.child"
+            v-if="menu.child && menu.isshow"
             @on-click="dropmenu"
             :key="key"
           >
@@ -155,12 +172,25 @@
             </Button>
             <DropdownMenu slot="list" class="dropmenuitem">
               <template v-for="(submenu, subkey) in menu.child">
-                <DropdownItem :name="submenu.name" :key="subkey">
+                <DropdownItem
+                  :name="submenu.name"
+                  :key="subkey"
+                  v-if="submenu.isshow"
+                >
                   {{ submenu.title }}
                 </DropdownItem>
               </template>
             </DropdownMenu>
           </Dropdown>
+          <Button
+            type="text"
+            class="dropmenubtn"
+            :key="key"
+            v-if="!menu.child && menu.isshow"
+            @click.native="dropmenu(menu.name)"
+          >
+            <Icon :type="menu.icon" size="20"></Icon>
+          </Button>
         </template>
       </div>
     </Sider>
@@ -212,18 +242,19 @@
       <Content style="height: 100%">
         <div class="tagnav no-select">
           <div class="tags">
-            <Tag type="dot">首页</Tag>
-            <Tag type="dot" closable color="success">标签二</Tag>
-            <Tag type="dot" closable color="error">标签三</Tag>
-            <Tag type="dot" closable color="warning">标签四</Tag>
-            <Tag type="dot" closable color="primary">首页</Tag>
-            <Tag type="dot" closable color="success">标签二</Tag>
-            <Tag type="dot" closable color="error">标签三</Tag>
-            <Tag type="dot" closable color="warning">标签四</Tag>
-            <Tag type="dot" closable color="primary">首页</Tag>
-            <Tag type="dot" closable color="success">标签二</Tag>
-            <Tag type="dot" closable color="error">标签三</Tag>
-            <Tag type="dot" closable>标签四</Tag>
+            <Tag
+              type="dot"
+              :closable="tag.name !== 'index'"
+              :color="tag.isactive ? 'primary' : 'default'"
+              v-for="tag in tags"
+              :name="tag.name"
+              :key="tag.name"
+              @on-close="closetag"
+              @click.native="clicktag(tag.name)"
+              style="cursor: pointer;"
+            >
+              {{ tag.title }}
+            </Tag>
           </div>
           <div class="tagmenu">
             <Dropdown>
@@ -275,6 +306,24 @@ export default {
     };
   },
   computed: {
+    tags() {
+      let tags = [];
+      this.menus.forEach(menu => {
+        if (menu.istag) {
+          tags.push(menu);
+        } else if (menu.child) {
+          menu.child.forEach(child => {
+            if (child.istag) {
+              tags.push(child);
+            }
+          });
+        }
+      });
+      tags.sort((a, b) => {
+        return a.num - b.num;
+      });
+      return tags;
+    },
     rotateIcon() {
       return ["menu-icon", this.isCollapsed ? "rotate-icon" : ""];
     },
@@ -282,23 +331,65 @@ export default {
       return ["menu-item", this.isCollapsed ? "collapsed-menu" : ""];
     }
   },
+  //初始化
   created() {
-    this.emp(); //员工信息
+    this.$http.get("/emp").then(data => {
+      this.menus = data.menus;
+      this.name = data.name;
+      this.avatar = data.avatar;
+      let path = this.$route.path;
+      let activename = "index";
+      if (path !== "/") activename = path.slice(1);
+      this.activename = activename;
+      let tags = ["index"];
+      if (localStorage.tags) tags = JSON.parse(localStorage.tags);
+      let tagnum = 0;
+      if (this.tags.length > 0) tagnum = this.tags[this.tags.length - 1].num;
+      this.menus.forEach(menu => {
+        if (tags.indexOf(menu.name) !== -1 || activename === menu.name) {
+          menu.istag = true;
+          menu.num = tagnum + 1;
+          tagnum++;
+        }
+        if (activename === menu.name) {
+          menu.isactive = true;
+        } else if (menu.child) {
+          menu.child.forEach(child => {
+            if (tags.indexOf(child.name) !== -1 || activename === child.name) {
+              child.istag = true;
+              child.num = tagnum + 1;
+              tagnum++;
+            }
+            if (activename === child.name) {
+              child.isactive = true;
+              this.opennames = [menu.name];
+            }
+          });
+        }
+      });
+      this.$nextTick(() => {
+        this.$refs.sidemenu.updateOpened();
+        this.$refs.sidemenu.updateActiveName();
+      });
+    });
   },
   methods: {
     collapsedSider() {
       this.$refs.side.toggleCollapse();
     },
+    //退出登录
     logout() {
       this.$cookies.remove("token");
       this.$router.push("/login");
     },
+    //全屏
     full() {
       if (!screenfull.isEnabled) {
         return false;
       }
       screenfull.toggle();
     },
+    //用户下拉菜单
     dropdown(name) {
       switch (name) {
         case "logout":
@@ -306,18 +397,92 @@ export default {
           break;
       }
     },
-    sidemenu(name) {
-      alert(name);
-    },
-    dropmenu(name) {
-      alert(name);
-    },
-    emp() {
-      this.$http.get("/emp").then(data => {
-        this.menus = data.menus;
-        this.name = data.name;
-        this.avatar = data.avatar;
+    //保存标签
+    tag() {
+      let tags = ["index"];
+      this.tags.forEach(tag => {
+        if (tag.name !== "index") tags.push(tag.name);
       });
+      localStorage.tags = JSON.stringify(tags);
+    },
+    //点击导航菜单
+    sidemenu(name) {
+      let tagnum = 0;
+      if (this.tags.length > 0) tagnum = this.tags[this.tags.length - 1].num;
+      this.activename = name;
+      let menu = null;
+      this.menus.forEach(_menu => {
+        if (_menu.name === name) {
+          if (!_menu.istag) {
+            _menu.num = tagnum + 1;
+            if (name === "index") _menu.num = 0;
+          }
+          menu = _menu;
+          _menu.istag = true;
+          _menu.isactive = true;
+        } else if (_menu.child) {
+          _menu.child.forEach(child => {
+            if (child.name === name) {
+              if (!child.istag) {
+                child.num = tagnum + 1;
+              }
+              menu = child;
+              child.istag = true;
+              child.isactive = true;
+            } else {
+              child.isactive = false;
+            }
+          });
+        } else {
+          _menu.isactive = false;
+        }
+      });
+      this.tag();
+      this.$router.push("/" + menu.name);
+    },
+    //点击下拉菜单
+    dropmenu(name) {
+      this.sidemenu(name);
+    },
+    //关闭标签
+    closetag(event, name) {
+      let isactive = false;
+      this.menus.forEach(menu => {
+        if (menu.name === name) {
+          isactive = menu.isactive;
+          menu.istag = false;
+        } else if (menu.child) {
+          menu.child.forEach(child => {
+            if (child.name === name) {
+              isactive = child.isactive;
+              child.istag = false;
+            }
+          });
+        }
+      });
+      this.tag();
+      if (isactive) {
+        let tag = this.tags[this.tags.length - 1];
+        tag.isactive = true;
+        this.$router.push("/" + tag.name);
+        this.activename = tag.name;
+      }
+    },
+    //点击标签
+    clicktag(name) {
+      this.tags.forEach(tag => {
+        if (tag.name === name) {
+          tag.isactive = true;
+        } else {
+          tag.isactive = false;
+        }
+      });
+      this.activename = name;
+      this.$nextTick(() => {
+        this.$refs.sidemenu.updateOpened();
+        this.$refs.sidemenu.updateActiveName();
+      });
+      this.$router.push("/" + name);
     }
   }
 };
