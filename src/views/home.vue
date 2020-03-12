@@ -194,7 +194,7 @@
         </template>
       </div>
     </Sider>
-    <Layout>
+    <Layout style="overflow: hidden;">
       <Header class="layout-header-bar no-select">
         <Row>
           <Col span="12">
@@ -245,7 +245,7 @@
             <Tag
               type="dot"
               :closable="tag.name !== 'index'"
-              :color="tag.isactive ? 'primary' : 'default'"
+              :color="tag.isactive ? 'success' : 'default'"
               v-for="tag in tags"
               :name="tag.name"
               :key="tag.name"
@@ -257,7 +257,7 @@
             </Tag>
           </div>
           <div class="tagmenu">
-            <Dropdown>
+            <Dropdown @on-click="closetags">
               <Button type="text" class="closebtn">
                 <Icon :size="18" type="ios-arrow-down" />
               </Button>
@@ -296,7 +296,7 @@ import screenfull from "screenfull";
 export default {
   data() {
     return {
-      isCollapsed: false,
+      isCollapsed: true,
       isFullscreen: false,
       activename: "",
       opennames: [],
@@ -396,6 +396,47 @@ export default {
           this.logout();
           break;
       }
+    },
+    //批量关闭标签
+    closetags(name) {
+      let tag = null;
+      if (name !== "all") {
+        this.tags.forEach(_tag => {
+          if (_tag.isactive) tag = _tag;
+        });
+      }
+      this.menus.forEach(menu => {
+        if (menu.name !== "index") {
+          if (name === "left" && menu.num < tag.num) menu.istag = false;
+          if (name === "right" && menu.num > tag.num) menu.istag = false;
+          if (name === "other" && menu.name !== tag.name) menu.istag = false;
+          if (name === "all") menu.istag = false;
+        } else {
+          if (name === "all") {
+            menu.isactive = true;
+            this.activename = "index";
+            this.opennames = [];
+          }
+        }
+        if (menu.child) {
+          menu.child.forEach(child => {
+            if (child.name !== "index") {
+              if (name === "left" && child.num < tag.num) child.istag = false;
+              if (name === "right" && child.num > tag.num) child.istag = false;
+              if (name === "other" && child.name !== tag.name)
+                child.istag = false;
+              if (name === "all") child.istag = false;
+            }
+          });
+        }
+      });
+      if (name === "all") {
+        this.$nextTick(() => {
+          this.$refs.sidemenu.updateOpened();
+          this.$refs.sidemenu.updateActiveName();
+        });
+      }
+      this.tag();
     },
     //保存标签
     tag() {

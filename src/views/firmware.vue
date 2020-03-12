@@ -1,5 +1,5 @@
 <template>
-  <div>firmware</div>
+  <div>固件管理</div>
 </template>
 
 <script>

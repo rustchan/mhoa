@@ -1,10 +1,20 @@
 <template>
-  <div>index</div>
+  <div>{{ name }}</div>
 </template>
 
 <script>
 export default {
-  name: "index"
+  name: "index",
+  data() {
+    return {
+      name: []
+    };
+  },
+  created() {
+    this.$http.get("/emp").then(data => {
+      this.name = data.name;
+    });
+  }
 };
 </script>
 

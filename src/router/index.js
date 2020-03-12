@@ -21,9 +21,9 @@ const routes = [
     component: () => import("../views/home.vue"),
     children: [
       {
-        path: "device",
-        name: "device",
-        component: () => import("../views/device.vue")
+        path: "devices",
+        name: "devices",
+        component: () => import("../views/devices.vue")
       },
       {
         path: "firmware",
