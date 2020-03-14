@@ -31,9 +31,9 @@ const routes = [
         component: () => import("../views/firmware.vue")
       },
       {
-        path: "product",
-        name: "product",
-        component: () => import("../views/product.vue")
+        path: "products",
+        name: "products",
+        component: () => import("../views/products.vue")
       },
       {
         path: "",

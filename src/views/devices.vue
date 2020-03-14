@@ -1,23 +1,45 @@
 <template>
-  <div class="device" style="overflow: hidden;">
+  <div class="device">
     <div class="tool">
       <div class="btn">
-        <Poptip confirm title="确认要删除设备吗？" @on-ok="del">
+        <Poptip
+          confirm
+          :title="'确认要删除' + dids.length + '个设备吗？'"
+          @on-ok="del"
+          :disabled="dids.length === 0"
+          v-if="limits.indexOf('devicedel') !== -1"
+        >
           <Button type="error" icon="md-close">删除</Button>
         </Poptip>
-        <Button type="warning" icon="md-lock">禁用</Button>
-        <Button type="success" icon="md-checkmark-circle">启用</Button>
+        <Poptip
+          confirm
+          :title="'确认要禁用' + dids.length + '个设备吗？'"
+          @on-ok="disable"
+          :disabled="dids.length === 0"
+          v-if="limits.indexOf('devicedisable') !== -1"
+        >
+          <Button type="warning" icon="md-lock">禁用</Button>
+        </Poptip>
+        <Poptip
+          confirm
+          :title="'确认要启用' + dids.length + '个设备吗？'"
+          @on-ok="enable"
+          :disabled="dids.length === 0"
+          v-if="limits.indexOf('deviceenable') !== -1"
+        >
+          <Button type="success" icon="md-checkmark-circle">启用</Button>
+        </Poptip>
         <Button icon="md-refresh" @click="load">刷新</Button>
       </div>
       <div class="search">
-        <Select v-model="search" style="width: 120px; margin-right: 10px;">
+        <Select v-model="search" style="width: 120px;margin-right: 10px;">
           <Option value="did">设备编号</Option>
           <Option value="devicename">设备名称</Option>
         </Select>
         <Input
           v-model="keyword"
           @on-enter="searchkeyword"
-          style="width: 150px;"
+          style="width: 200px;"
         >
           <Button
             slot="append"
@@ -33,13 +55,13 @@
         :data="tabledata"
         border
         stripe
-        highlight-row
         :height="tableheight"
         :loading="loading"
+        @on-selection-change="selectchange"
       >
         <template slot-scope="{ row }" slot="status">
           <template v-if="row.status === 'online'">
-            <Badge color="green" text="在线" />
+            <Badge color="green" text="上线" />
           </template>
           <template v-if="row.status === 'offline'">
             <Badge color="red" text="离线" />
@@ -72,6 +94,7 @@
 <script>
 export default {
   name: "device",
+  props: ["limits"],
   data() {
     return {
       loading: false,
@@ -138,7 +161,8 @@ export default {
           key: "lasttime"
         }
       ],
-      tabledata: []
+      tabledata: [],
+      dids: []
     };
   },
   methods: {
@@ -154,8 +178,50 @@ export default {
       this.pagenum = 1;
       this.load();
     },
+    selectchange(selection) {
+      this.dids = [];
+      selection.forEach(row => {
+        this.dids.push(row.did);
+      });
+    },
     del() {
-      alert();
+      this.$http
+        .post(
+          "/devicedel",
+          this.$qs.stringify({
+            dids: this.dids.join(",")
+          })
+        )
+        .then(() => {
+          this.$Message.success("删除成功");
+          this.load();
+        });
+    },
+    disable() {
+      this.$http
+        .post(
+          "/devicedisable",
+          this.$qs.stringify({
+            dids: this.dids.join(",")
+          })
+        )
+        .then(() => {
+          this.$Message.success("禁用成功");
+          this.load();
+        });
+    },
+    enable() {
+      this.$http
+        .post(
+          "/deviceenable",
+          this.$qs.stringify({
+            dids: this.dids.join(",")
+          })
+        )
+        .then(() => {
+          this.$Message.success("启用成功");
+          this.load();
+        });
     },
     load() {
       this.loading = true;

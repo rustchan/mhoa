@@ -284,7 +284,7 @@
         </div>
         <div class="content">
           <keep-alive>
-            <router-view />
+            <router-view :limits="limits"></router-view>
           </keep-alive>
         </div>
       </Content>
@@ -296,11 +296,12 @@ import screenfull from "screenfull";
 export default {
   data() {
     return {
-      isCollapsed: true,
+      isCollapsed: false,
       isFullscreen: false,
       activename: "",
       opennames: [],
       menus: [],
+      limits: [],
       name: "",
       avatar: ""
     };
@@ -333,8 +334,9 @@ export default {
   },
   //初始化
   created() {
-    this.$http.get("/emp").then(data => {
+    this.$http.get("/menu").then(data => {
       this.menus = data.menus;
+      this.limits = data.limits;
       this.name = data.name;
       this.avatar = data.avatar;
       let path = this.$route.path;

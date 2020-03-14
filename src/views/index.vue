@@ -11,7 +11,7 @@ export default {
     };
   },
   created() {
-    this.$http.get("/emp").then(data => {
+    this.$http.get("/menu").then(data => {
       this.name = data.name;
     });
   }
