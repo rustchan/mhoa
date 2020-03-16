@@ -1,5 +1,5 @@
 <template>
-  <div>{{ name }}</div>
+  <div></div>
 </template>
 
 <script>
@@ -10,12 +10,6 @@ export default {
       name: []
     };
   },
-  created() {
-    this.$http.get("/menu").then(data => {
-      this.name = data.name;
-    });
-  }
+  created() {}
 };
 </script>
-
-<style scoped></style>

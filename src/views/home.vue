@@ -1,3 +1,29 @@
+<style>
+.ivu-table td.key {
+  background-color: #f8f8f9;
+}
+.tool {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 50px;
+}
+.btn button {
+  margin-left: 10px;
+}
+.search {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 15px;
+}
+.page {
+  position: fixed;
+  bottom: 0;
+  height: 40px;
+  right: 20px;
+}
+</style>
 <style scoped>
 .layout {
   background: #f5f7f9;
