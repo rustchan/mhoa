@@ -8,8 +8,12 @@
   align-items: center;
   height: 50px;
 }
-.btn button {
-  margin-left: 10px;
+.btn button,
+td button {
+  margin-right: 10px;
+}
+.btn {
+  padding-left: 15px;
 }
 .search {
   display: flex;
@@ -22,6 +26,9 @@
   bottom: 0;
   height: 40px;
   right: 20px;
+}
+.formitem {
+  margin-bottom: 30px;
 }
 </style>
 <style scoped>
@@ -399,6 +406,11 @@ export default {
         this.$refs.sidemenu.updateOpened();
         this.$refs.sidemenu.updateActiveName();
       });
+    });
+    this.$Loading.config({
+      color: "#5cb85c",
+      failedColor: "#f0ad4e",
+      height: 3
     });
   },
   methods: {

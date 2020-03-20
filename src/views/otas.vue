@@ -12,29 +12,35 @@
           <Button type="error" icon="md-close">删除</Button>
         </Poptip>
         <template v-if="limits.indexOf('otaadd') !== -1">
-          <Button type="primary" icon="md-add" @click="add">添加</Button>
+          <Button type="primary" icon="md-add" @click="isaddmodal = true"
+            >添加
+          </Button>
         </template>
         <template v-if="limits.indexOf('otacheck') !== -1">
-          <Button type="info" icon="md-checkbox-outline" @click="check">
+          <Button type="info" icon="md-checkbox-outline" @click="checkmodal">
             验证
           </Button>
         </template>
         <template v-if="limits.indexOf('otaupdate') !== -1">
-          <Button type="success" icon="md-cloud-done" @click="edit">
+          <Button
+            type="success"
+            icon="md-cloud-done"
+            @click="isupdateform = true"
+          >
             升级
           </Button>
         </template>
         <Button icon="md-refresh" @click="load">刷新</Button>
       </div>
       <div class="search">
-        <Select v-model="pid" @on-change="load" style="width: 250px;">
+        <Select v-model="pid" @on-change="load" style="width: 200px;">
           <Option value="0">全部产品</Option>
           <Option
             v-for="product in products"
             :value="product.pid"
             :key="product.pid"
           >
-            {{ product.productname }} - {{ product.model }}
+            {{ product.productname }}
           </Option>
         </Select>
       </div>
@@ -60,10 +66,31 @@
           <template v-if="row.status === 'checking'">
             <Tag color="warning">验证中</Tag>
           </template>
+          <template v-if="row.status === 'checkfail'">
+            <Tag color="error">已失败</Tag>
+          </template>
         </template>
         <template slot-scope="{ row }" slot="action">
           <Button type="primary" size="small" @click="ota(row.otaid)">
             查看
+          </Button>
+          <Button
+            type="success"
+            size="small"
+            v-if="limits.indexOf('otaupdate') !== -1"
+            @click="updatemodal(row.otaid)"
+            :disabled="row.status !== 'checked'"
+          >
+            升级
+          </Button>
+          <Button
+            type="info"
+            size="small"
+            v-if="limits.indexOf('otacheck') !== -1"
+            @click="checkmodal(row.otaid)"
+            :disabled="row.status === 'checked' || row.status === 'checking'"
+          >
+            验证
           </Button>
         </template>
       </Table>
@@ -80,6 +107,92 @@
         @on-page-size-change="pagesizechange"
       />
     </div>
+    <Modal
+      v-model="isaddmodal"
+      :mask-closable="false"
+      title="固件添加"
+      width="400"
+      @on-cancel="addmodalclose"
+    >
+      <Form
+        :model="addform"
+        :rules="addformrules"
+        ref="addform"
+        label-position="top"
+      >
+        <FormItem label="所属产品" prop="pid" class="formitem">
+          <Select v-model="addform.pid">
+            <Option
+              v-for="product in products"
+              :value="product.pid"
+              :key="product.pid"
+            >
+              {{ product.productname }} - {{ product.model }}
+            </Option>
+          </Select>
+        </FormItem>
+        <FormItem label="固件版本" prop="ver" class="formitem">
+          <Input v-model="addform.ver"></Input>
+        </FormItem>
+        <FormItem label="固件文件" prop="file" class="formitem">
+          <Upload
+            :action="action"
+            :format="['bin']"
+            :show-upload-list="false"
+            :data="updata"
+            :on-success="upok"
+            :on-error="uperr"
+          >
+            <Button>
+              <span v-if="addform.file !== ''">重新</span>上传固件
+            </Button>
+            <br /><span v-if="addform.file !== ''">已上传成功</span>
+          </Upload>
+        </FormItem>
+      </Form>
+      <template slot="footer">
+        <Button type="text" @click="addmodalclose">取消</Button>
+        <Button type="primary" @click="add" :loading="adding">添加</Button>
+      </template>
+    </Modal>
+    <Modal
+      v-model="ischeckmodal"
+      :mask-closable="false"
+      title="固件验证"
+      @on-cancel="checkmodalclose"
+    >
+      <Form
+        :model="checkform"
+        :rules="checkformrules"
+        ref="checkform"
+        label-position="top"
+      >
+        <FormItem label="待升级版本号" prop="vers" class="formitem">
+          <Select v-model="checkform.vers" multiple filterable="true">
+            <Option v-for="(ver, i) in vers" :value="ver" :key="i">
+              {{ ver }}
+            </Option>
+          </Select>
+        </FormItem>
+        <FormItem label="待升级设备" prop="dids" class="formitem">
+          <Select
+            v-model="checkform.dids"
+            multiple
+            remote
+            filterable="true"
+            :remote-method="checkdevice"
+          >
+            <Option v-for="(device, i) in devices" :value="device.did" :key="i">
+              {{ device.did }} - {{ device.ver }} - {{ device.devicename }}
+            </Option>
+          </Select>
+        </FormItem>
+      </Form>
+      <template slot="footer">
+        <Button type="text" @click="checkmodalclose">取消</Button>
+        <Button type="info" @click="check" :loading="checking">验证</Button>
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -89,6 +202,8 @@ export default {
   props: ["limits"],
   data() {
     return {
+      action: process.env.VUE_APP_API + "/upload",
+      loading: false,
       pid: "0",
       otaid: 0,
       pagetotal: 0,
@@ -135,10 +250,204 @@ export default {
         }
       ],
       tabledata: [],
-      products: []
+      products: [],
+      isaddmodal: false,
+      adding: false,
+      addform: {
+        pid: 0,
+        ver: "",
+        file: "",
+        md5: ""
+      },
+      addformrules: {
+        pid: [
+          {
+            type: "integer",
+            required: true,
+            min: 1,
+            message: "请选择所属产品",
+            trigger: "change"
+          }
+        ],
+        ver: [
+          {
+            type: "string",
+            required: true,
+            min: 3,
+            message: "请输入版本号",
+            trigger: "blur"
+          }
+        ],
+        file: [
+          {
+            type: "string",
+            required: true,
+            message: "请上传固件"
+          }
+        ]
+      },
+      updata: {
+        type: "ota"
+      },
+      ischeckmodal: false,
+      checking: false,
+      checkpid: 0,
+      checkver: "",
+      checkform: {
+        vers: [],
+        dids: []
+      },
+      checkformrules: {
+        dids: [
+          {
+            type: "array",
+            required: true,
+            message: "请选择设备",
+            trigger: "change"
+          }
+        ],
+        vers: [
+          {
+            type: "array",
+            required: true,
+            message: "请选择版本号",
+            trigger: "change"
+          }
+        ]
+      },
+      vers: [],
+      devices: []
     };
   },
   methods: {
+    checkdevice(keyword) {
+      if (keyword === "") return;
+      this.$http
+        .get("/devices", {
+          params: {
+            pagenum: 1,
+            pagesize: 10,
+            pid: this.checkpid,
+            search: "did",
+            keyword: keyword
+          }
+        })
+        .then(data => {
+          this.dids = [];
+          this.devices = data.devices;
+        });
+    },
+    check() {
+      this.$refs.checkform.validate(valid => {
+        if (valid) {
+          this.checking = true;
+          this.$http
+            .post(
+              "/otacheck",
+              this.$qs.stringify(
+                {
+                  otaid: this.otaid,
+                  vers: this.checkform.vers,
+                  dids: this.checkform.dids
+                },
+                { indices: false }
+              )
+            )
+            .then(() => {
+              this.$Message.success("固件验证提交成功");
+              this.load();
+              this.checkmodalclose();
+              this.checking = false;
+            })
+            .catch(() => {
+              this.checking = false;
+            });
+        }
+      });
+    },
+    checkmodal(otaid) {
+      if (otaid > 0) this.otaid = otaid;
+      if (this.otaid === 0) return;
+      this.tabledata.forEach(data => {
+        if (data.otaid === this.otaid) {
+          this.checkpid = data.pid;
+          this.checkver = data.ver;
+        }
+      });
+      this.$http
+        .get("/devicever", {
+          params: {
+            otaid: this.otaid,
+            pid: this.checkpid
+          }
+        })
+        .then(data => {
+          this.vers = [];
+          data.vers.forEach(ver => {
+            if (ver !== this.checkver) this.vers.push(ver);
+          });
+          this.ischeckmodal = true;
+        });
+    },
+    checkmodalclose() {
+      this.ischeckmodal = false;
+      this.$refs.checkform.resetFields();
+      this.dids = [];
+    },
+    addmodalclose() {
+      this.isaddmodal = false;
+      this.$refs.addform.resetFields();
+    },
+    add() {
+      this.$refs.addform.validate(valid => {
+        if (valid) {
+          this.adding = true;
+          this.$http
+            .post(
+              "/otaadd",
+              this.$qs.stringify({
+                pid: this.addform.pid,
+                ver: this.addform.ver,
+                file: this.addform.file,
+                md5: this.addform.md5
+              })
+            )
+            .then(() => {
+              this.$Message.success("固件添加成功");
+              this.load();
+              this.addmodalclose();
+              this.adding = false;
+            })
+            .catch(() => {
+              this.adding = false;
+            });
+        }
+      });
+    },
+    del() {
+      this.$http
+        .post(
+          "/otadel",
+          this.$qs.stringify({
+            otaid: this.otaid
+          })
+        )
+        .then(() => {
+          this.$Message.success("固件删除成功");
+          this.load();
+        });
+    },
+    upok(res) {
+      if (res.code > 0) {
+        this.$Message.error(res.msg);
+        return;
+      }
+      this.addform.file = res.path;
+      this.addform.md5 = res.md5;
+    },
+    uperr() {
+      this.$Message.error("固件上传失败");
+    },
     pagenumchange(page) {
       this.pagenum = page;
       this.load();
@@ -151,6 +460,7 @@ export default {
       this.otaid = row.otaid;
     },
     load() {
+      this.$Loading.start();
       this.$http
         .get("/otas", {
           params: {
@@ -160,6 +470,7 @@ export default {
           }
         })
         .then(data => {
+          this.$Loading.finish();
           this.otaid = 0;
           this.tabledata = data.otas;
           this.pagetotal = data.pagetotal;

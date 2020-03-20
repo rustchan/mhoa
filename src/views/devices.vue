@@ -32,11 +32,24 @@
         <Button icon="md-refresh" @click="load">刷新</Button>
       </div>
       <div class="search">
+        <Select
+          v-model="pid"
+          @on-change="load"
+          style="width: 200px;margin-right: 10px;"
+        >
+          <Option value="0">全部产品</Option>
+          <Option
+            v-for="product in products"
+            :value="product.pid"
+            :key="product.pid"
+          >
+            {{ product.productname }}
+          </Option>
+        </Select>
         <Select v-model="search" style="width: 120px;margin-right: 10px;">
           <Option value="did">设备编号</Option>
           <Option value="devicename">设备名称</Option>
           <Option value="uid">用户编号</Option>
-          <Option value="pid">产品编号</Option>
         </Select>
         <Input
           v-model="keyword"
@@ -58,7 +71,6 @@
         border
         stripe
         :height="tableheight"
-        :loading="tableloading"
         @on-selection-change="selectchange"
         size="small"
       >
@@ -176,7 +188,7 @@ export default {
     return {
       tab: "info",
       isdrawer: false,
-      tableloading: false,
+      pid: "0",
       search: "did",
       keyword: "",
       pagetotal: 0,
@@ -248,6 +260,7 @@ export default {
         }
       ],
       tabledata: [],
+      products: [],
       did: 0,
       dids: [],
       devicetitle: [
@@ -421,20 +434,22 @@ export default {
     },
     load() {
       this.dids = [];
-      this.tableloading = true;
+      this.$Loading.start();
       this.$http
         .get("/devices", {
           params: {
             pagenum: this.pagenum,
             pagesize: this.pagesize,
             search: this.search,
-            keyword: this.keyword
+            keyword: this.keyword,
+            pid: this.pid
           }
         })
         .then(data => {
-          this.tableloading = false;
+          this.$Loading.finish();
           this.tabledata = data.devices;
           this.pagetotal = data.pagetotal;
+          this.products = data.products;
         });
     }
   },

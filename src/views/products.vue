@@ -55,7 +55,6 @@
         stripe
         highlight-row
         :height="tableheight"
-        :loading="tableloading"
         @on-current-change="select"
         size="small"
       >
@@ -122,7 +121,6 @@ export default {
   data() {
     return {
       pid: 0,
-      tableloading: false,
       search: "pid",
       keyword: "",
       pagetotal: 0,
@@ -232,7 +230,7 @@ export default {
         });
     },
     load() {
-      this.tableloading = true;
+      this.$Loading.start();
       this.$http
         .get("/products", {
           params: {
@@ -243,7 +241,7 @@ export default {
           }
         })
         .then(data => {
-          this.tableloading = false;
+          this.$Loading.finish();
           this.pid = 0;
           this.tabledata = data.products;
           this.pagetotal = data.pagetotal;
