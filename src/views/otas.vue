@@ -11,25 +11,22 @@
         >
           <Button type="error" icon="md-close">删除</Button>
         </Poptip>
-        <template v-if="limits.indexOf('otaadd') !== -1">
-          <Button type="primary" icon="md-add" @click="isaddmodal = true"
-            >添加
-          </Button>
-        </template>
-        <template v-if="limits.indexOf('otacheck') !== -1">
-          <Button type="info" icon="md-checkbox-outline" @click="checkmodal">
-            验证
-          </Button>
-        </template>
-        <template v-if="limits.indexOf('otaupdate') !== -1">
-          <Button
-            type="success"
-            icon="md-cloud-done"
-            @click="isupdateform = true"
-          >
-            升级
-          </Button>
-        </template>
+        <Button
+          type="primary"
+          icon="md-add"
+          v-if="limits.indexOf('otaadd') !== -1"
+          @click="isaddmodal = true"
+        >
+          添加
+        </Button>
+        <Button
+          type="info"
+          icon="md-list"
+          v-if="limits.indexOf('ota') !== -1"
+          @click="ota"
+        >
+          查看
+        </Button>
         <Button icon="md-refresh" @click="load">刷新</Button>
       </div>
       <div class="search">
@@ -71,7 +68,12 @@
           </template>
         </template>
         <template slot-scope="{ row }" slot="action">
-          <Button type="primary" size="small" @click="ota(row.otaid)">
+          <Button
+            type="info"
+            size="small"
+            v-if="limits.indexOf('ota') !== -1"
+            @click="ota(row.otaid)"
+          >
             查看
           </Button>
           <Button
@@ -84,7 +86,7 @@
             升级
           </Button>
           <Button
-            type="info"
+            type="warning"
             size="small"
             v-if="limits.indexOf('otacheck') !== -1"
             @click="checkmodal(row.otaid)"
@@ -193,6 +195,42 @@
         <Button type="info" @click="check" :loading="checking">验证</Button>
       </template>
     </Modal>
+    <Modal
+      v-model="isupdatemodal"
+      :mask-closable="false"
+      title="固件升级"
+      @on-cancel="updatemodalclose"
+      width="400"
+    >
+      <Form
+        :model="updateform"
+        :rules="updateformrules"
+        ref="updateform"
+        label-position="top"
+      >
+        <FormItem label="待升级版本号" prop="vers" class="formitem">
+          <Select v-model="updateform.vers" multiple filterable="true">
+            <Option v-for="(ver, i) in vers" :value="ver" :key="i">
+              {{ ver }}
+            </Option>
+          </Select>
+        </FormItem>
+        <FormItem label="升级时间" class="formitem">
+          <DatePicker
+            type="datetime"
+            placeholder="立即升级"
+            :editable="false"
+            style="width: 200px"
+            @on-change="updatetime"
+            :value="updateform.updatetime"
+          ></DatePicker>
+        </FormItem>
+      </Form>
+      <template slot="footer">
+        <Button type="text" @click="updatemodalclose">取消</Button>
+        <Button type="info" @click="update" :loading="updating">升级</Button>
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -206,6 +244,8 @@ export default {
       loading: false,
       pid: "0",
       otaid: 0,
+      otapid: 0,
+      otaver: "",
       pagetotal: 0,
       pagesize: 30,
       pagenum: 1,
@@ -291,8 +331,6 @@ export default {
       },
       ischeckmodal: false,
       checking: false,
-      checkpid: 0,
-      checkver: "",
       checkform: {
         vers: [],
         dids: []
@@ -316,10 +354,88 @@ export default {
         ]
       },
       vers: [],
-      devices: []
+      devices: [],
+      isupdatemodal: false,
+      updating: false,
+      updateform: {
+        vers: [],
+        updatetime: ""
+      },
+      updateformrules: {
+        vers: [
+          {
+            type: "array",
+            required: true,
+            message: "请选择版本号",
+            trigger: "change"
+          }
+        ]
+      }
     };
   },
   methods: {
+    updatetime(time) {
+      this.updateform.updatetime = time;
+    },
+    update() {
+      this.$refs.updateform.validate(valid => {
+        if (valid) {
+          this.updating = true;
+          this.$http
+            .post(
+              "/otaupdate",
+              this.$qs.stringify(
+                {
+                  otaid: this.otaid,
+                  vers: this.updateform.vers,
+                  updatetime: this.updateform.updatetime
+                },
+                { indices: false }
+              )
+            )
+            .then(() => {
+              this.$Message.success("固件升级提交成功");
+              this.updatemodalclose();
+              this.updating = false;
+            })
+            .catch(() => {
+              this.updating = false;
+            });
+        }
+      });
+    },
+    updatemodal(otaid) {
+      if (otaid > 0) this.otaid = otaid;
+      this.tabledata.forEach(data => {
+        if (data.otaid === otaid) {
+          this.otapid = data.pid;
+          this.otaver = data.ver;
+        }
+      });
+      this.$http
+        .get("/devicever", {
+          params: {
+            pid: this.otapid
+          }
+        })
+        .then(data => {
+          this.vers = [];
+          data.vers.forEach(ver => {
+            if (ver !== this.otaver) this.vers.push(ver);
+          });
+          this.isupdatemodal = true;
+        });
+    },
+    updatemodalclose() {
+      this.isupdatemodal = false;
+      this.updateform.updatetime = "";
+      this.$refs.updateform.resetFields();
+    },
+    ota(otaid) {
+      if (otaid > 0) this.otaid = otaid;
+      if (this.otaid === 0) return;
+      this.$router.push({ path: "/ota/" + this.otaid });
+    },
     checkdevice(keyword) {
       if (keyword === "") return;
       this.$http
@@ -327,14 +443,19 @@ export default {
           params: {
             pagenum: 1,
             pagesize: 10,
-            pid: this.checkpid,
+            pid: this.otapid,
             search: "did",
             keyword: keyword
           }
         })
         .then(data => {
           this.dids = [];
-          this.devices = data.devices;
+          this.devices = [];
+          data.devices.forEach(device => {
+            if (device.status === "online" && device.ver !== this.otaver) {
+              this.devices.push(device);
+            }
+          });
         });
     },
     check() {
@@ -367,24 +488,22 @@ export default {
     },
     checkmodal(otaid) {
       if (otaid > 0) this.otaid = otaid;
-      if (this.otaid === 0) return;
       this.tabledata.forEach(data => {
-        if (data.otaid === this.otaid) {
-          this.checkpid = data.pid;
-          this.checkver = data.ver;
+        if (data.otaid === otaid) {
+          this.otapid = data.pid;
+          this.otaver = data.ver;
         }
       });
       this.$http
         .get("/devicever", {
           params: {
-            otaid: this.otaid,
-            pid: this.checkpid
+            pid: this.otapid
           }
         })
         .then(data => {
           this.vers = [];
           data.vers.forEach(ver => {
-            if (ver !== this.checkver) this.vers.push(ver);
+            if (ver !== this.otaver) this.vers.push(ver);
           });
           this.ischeckmodal = true;
         });

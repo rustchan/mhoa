@@ -31,9 +31,19 @@ const routes = [
         component: () => import("../views/otas.vue")
       },
       {
+        path: "ota/:otaid",
+        name: "ota",
+        component: () => import("../views/ota.vue")
+      },
+      {
         path: "products",
         name: "products",
         component: () => import("../views/products.vue")
+      },
+      {
+        path: "index",
+        name: "index",
+        component: () => import("../views/index.vue")
       },
       {
         path: "",

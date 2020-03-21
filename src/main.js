@@ -40,9 +40,9 @@ axios.interceptors.response.use(
   response => {
     let data = response.data;
     if (data.code > 0) {
+      ViewUI.LoadingBar.destroy();
       if (data.msg) ViewUI.Message.error(data.msg);
       if (data.code === 104) {
-        ViewUI.LoadingBar.destroy();
         router.push({ path: "/login" });
       }
       return Promise.reject(data);

@@ -329,7 +329,7 @@ import screenfull from "screenfull";
 export default {
   data() {
     return {
-      isCollapsed: false,
+      isCollapsed: true,
       isFullscreen: false,
       activename: "",
       opennames: [],
