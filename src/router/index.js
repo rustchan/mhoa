@@ -67,9 +67,9 @@ const router = new VueRouter({
 router.beforeEach((to, from, next) => {
   //跳转https
   if (
-    location.protocol !== "https:" &&
-    location.hostname !== "localhost" &&
-    location.hostname !== "127.0.0.1"
+    location.protocol === "http:" &&
+    process.env.NODE_ENV === "production" &&
+    location.host.indexOf("mhiot.com") !== -1
   ) {
     location.href = "https://" + location.host + location.pathname;
   }
