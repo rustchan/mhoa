@@ -329,7 +329,7 @@ import screenfull from "screenfull";
 export default {
   data() {
     return {
-      isCollapsed: true,
+      isCollapsed: false,
       isFullscreen: false,
       activename: "",
       opennames: [],
@@ -368,6 +368,7 @@ export default {
   //初始化
   created() {
     this.$http.get("/menu").then(data => {
+      console.log(data.menus);
       this.menus = data.menus;
       this.limits = data.limits;
       this.name = data.name;
@@ -399,6 +400,7 @@ export default {
               child.isactive = true;
               this.opennames = [menu.name];
             }
+            if (this.menus.length === 2) this.opennames = [menu.name];
           });
         }
       });

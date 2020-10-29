@@ -63,10 +63,20 @@ export default {
       },
       rules: {
         user: [
-          { required: true, min: 4, message: "请输入员工账号", trigger: "blur" }
+          {
+            required: true,
+            min: 4,
+            message: "请输入正确的账号",
+            trigger: "blur"
+          }
         ],
         pass: [
-          { required: true, min: 8, message: "请输入员工密码", trigger: "blur" }
+          {
+            required: true,
+            min: 8,
+            message: "请输入正确的密码",
+            trigger: "blur"
+          }
         ]
       },
       iswxlogin: false,

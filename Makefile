@@ -1,8 +1,9 @@
 .PHONY: build
 build:
 	npm run build
-	docker build -t mhadmin .
-	docker tag mhadmin registry.cn-shanghai.aliyuncs.com/mhiot/mhadmin
-	docker login --username=gorust@qq.com registry.cn-shanghai.aliyuncs.com
-	docker push registry.cn-shanghai.aliyuncs.com/mhiot/mhadmin
-	docker rmi -f registry.cn-shanghai.aliyuncs.com/mhiot/mhadmin
+	docker build -t mhoa .
+	docker tag mhoa ccr.ccs.tencentyun.com/mhiot/mhoa
+	docker login --username=6305884 ccr.ccs.tencentyun.com
+	docker push ccr.ccs.tencentyun.com/mhiot/mhoa
+	docker rmi -f ccr.ccs.tencentyun.com/mhiot/mhoa
+	docker rmi -f mhoa
