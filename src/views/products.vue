@@ -230,7 +230,10 @@ export default {
         });
     },
     load() {
-      this.$Loading.start();
+      this.$Message.loading({
+        content: "正在加载中...",
+        duration: 0
+      });
       this.$http
         .get("/products", {
           params: {
@@ -241,7 +244,7 @@ export default {
           }
         })
         .then(data => {
-          this.$Loading.finish();
+          this.$Message.destroy();
           this.pid = 0;
           this.tabledata = data.products;
           this.pagetotal = data.pagetotal;

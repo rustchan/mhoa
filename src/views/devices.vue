@@ -48,8 +48,8 @@
         </Select>
         <Select v-model="search" style="width: 120px;margin-right: 10px;">
           <Option value="did">设备编号</Option>
-          <Option value="devicename">设备名称</Option>
-          <Option value="uid">用户编号</Option>
+          <Option value="mac">MAC地址</Option>
+          <Option value="ip">IP地址</Option>
         </Select>
         <Input
           v-model="keyword"
@@ -89,9 +89,7 @@
           </template>
         </template>
         <template slot-scope="{ row }" slot="action">
-          <Button type="primary" size="small" @click="data(row.did)">
-            查看
-          </Button>
+          <a style="font-size: 14px;" @click="data(row.did)">查看</a>
         </template>
       </Table>
     </div>
@@ -108,7 +106,7 @@
       />
     </div>
     <Drawer
-      :title="did"
+      :title="'设备' + did"
       v-model="isdrawer"
       width="350"
       :mask="false"
@@ -140,7 +138,7 @@
                   <Tag color="warning">禁用</Tag>
                 </template>
               </template>
-              <template v-else-if="index === 10">
+              <template v-else-if="index === 8">
                 <template v-if="row.data === 'device'">
                   设备
                 </template>
@@ -157,20 +155,24 @@
         </TabPane>
         <TabPane name="data" label="运行数据">
           <template v-for="(def, i) in devicedef">
-            <Card
-              :key="i"
-              :title="def.name"
-              style="margin-bottom: 20px;"
-              :dis-hover="true"
-            >
+            <Card :key="i" style="margin-bottom: 20px;" :dis-hover="true">
+              <p slot="title">{{ def.funcname }}</p>
+              <template v-if="def.issw">
+                <Button
+                  type="info"
+                  size="small"
+                  slot="extra"
+                  @click.prevent="sw(def.id)"
+                >
+                  {{ def.action }}
+                </Button>
+              </template>
               <p style="font-size: 30px;">
-                {{ devicedata[def.id] }}
-                <span style="font-size: 20px;">
-                  <template v-if="def.type === 'bool'">
-                    ({{ def.typedata.split(",")[devicedata[def.id]] }})
-                  </template>
-                  {{ def.unit }}
-                </span>
+                <template v-if="def.datatype === 'bool'">
+                  {{ def.value }}
+                </template>
+                <template v-else>{{ def.data }}</template>
+                <span style="font-size: 20px;">{{ def.unit }}</span>
               </p>
             </Card>
           </template>
@@ -220,43 +222,41 @@ export default {
         },
         {
           title: "产品名称",
-          width: 150,
+          minWidth: 150,
           key: "productname"
         },
         {
-          title: "设备名称",
-          width: 120,
-          key: "devicename"
-        },
-        {
-          title: "固件版本",
+          title: "固件",
           width: 90,
           key: "ver",
           align: "center"
         },
         {
           title: "IP地址",
-          width: 140,
+          minWidth: 140,
           key: "ip"
         },
         {
           title: "MAC地址",
-          width: 150,
+          minWidth: 150,
           key: "mac"
         },
         {
           title: "注册时间",
-          width: 150,
-          key: "addtime"
+          minWidth: 160,
+          key: "regtime"
         },
         {
           title: "最后上线时间",
-          width: 150,
+          minWidth: 160,
           key: "lasttime"
         },
         {
           title: "操作",
-          slot: "action"
+          width: 120,
+          slot: "action",
+          align: "center",
+          fixed: "right"
         }
       ],
       tabledata: [],
@@ -281,14 +281,6 @@ export default {
         },
         {
           key: "设备状态",
-          data: ""
-        },
-        {
-          key: "设备名称",
-          data: ""
-        },
-        {
-          key: "用户编号",
           data: ""
         },
         {
@@ -332,7 +324,6 @@ export default {
           data: ""
         }
       ],
-      devicedata: [],
       devicedef: [],
       timer: 0
     };
@@ -403,7 +394,7 @@ export default {
       if (did > 0) {
         this.did = did;
         if (this.timer === 0) this.timer = setInterval(this.data, 5000);
-        //this.tab = "info";
+        this.tab = "info";
       } else did = this.did;
       this.isdrawer = true;
       this.$http
@@ -415,26 +406,70 @@ export default {
         .then(data => {
           this.deviceinfo[0].data = data.device.did;
           this.deviceinfo[1].data = data.device.status;
-          this.deviceinfo[2].data = data.device.devicename;
-          if (data.device.uid > 0) this.deviceinfo[3].data = data.device.uid;
-          else this.deviceinfo[3].data = "-";
-          this.deviceinfo[4].data = data.device.ver;
-          this.deviceinfo[5].data = data.device.ip;
-          this.deviceinfo[6].data = data.device.mac;
-          this.deviceinfo[7].data = data.product.pid;
-          this.deviceinfo[8].data = data.product.model;
-          this.deviceinfo[9].data = data.product.productname;
-          this.deviceinfo[10].data = data.product.type;
-          this.deviceinfo[11].data = data.product.netmode;
-          this.deviceinfo[12].data = data.device.addtime;
-          this.deviceinfo[13].data = data.device.lasttime;
-          this.devicedata = data.data;
+          this.deviceinfo[2].data = data.device.ver;
+          this.deviceinfo[3].data = data.device.ip;
+          this.deviceinfo[4].data = data.device.mac;
+          this.deviceinfo[5].data = data.product.pid;
+          this.deviceinfo[6].data = data.product.model;
+          this.deviceinfo[7].data = data.product.productname;
+          this.deviceinfo[8].data = data.product.type;
+          this.deviceinfo[9].data = data.product.netmode;
+          this.deviceinfo[10].data = data.device.regtime;
+          this.deviceinfo[11].data = data.device.lasttime;
           this.devicedef = data.def;
+          this.devicedef.forEach(def => {
+            if (def.datatype === "float") {
+              def.data = data.data[def.id].toFixed(def.datavalue);
+            } else def.data = data.data[def.id];
+            if (def.datatype === "bool") {
+              def.value = def.datavalue.split(",")[def.data];
+              if (def.data) {
+                def.action = def.datavalue.split(",")[0];
+              } else {
+                def.action = def.datavalue.split(",")[1];
+              }
+            }
+          });
+          this.tabledata.forEach(row => {
+            if (row.did === did) row.status = data.device.status;
+          });
         });
+    },
+    sw(defid) {
+      let data = 1;
+      this.devicedef.forEach(def => {
+        if (def.id === defid) {
+          if (def.data) data = 0;
+        }
+      });
+
+      this.$http.post(
+        "/switch",
+        this.$qs.stringify({
+          part: defid,
+          data: data
+        })
+      );
+
+      this.devicedef.forEach((def, i) => {
+        if (def.id === defid) {
+          def.data = data;
+          def.value = def.datavalue.split(",")[def.data];
+          if (def.data) {
+            def.action = def.datavalue.split(",")[0];
+          } else {
+            def.action = def.datavalue.split(",")[1];
+          }
+          this.$set(this.devicedef, i, def);
+        }
+      });
     },
     load() {
       this.dids = [];
-      this.$Loading.start();
+      this.$Message.loading({
+        content: "正在加载中...",
+        duration: 0
+      });
       this.$http
         .get("/devices", {
           params: {
@@ -446,7 +481,7 @@ export default {
           }
         })
         .then(data => {
-          this.$Loading.finish();
+          this.$Message.destroy();
           this.tabledata = data.devices;
           this.pagetotal = data.pagetotal;
           this.products = data.products;

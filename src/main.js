@@ -40,9 +40,8 @@ axios.interceptors.response.use(
   response => {
     let data = response.data;
     if (data.code > 0) {
-      ViewUI.LoadingBar.destroy();
       if (data.msg) ViewUI.Message.error(data.msg);
-      if (data.code === 104) {
+      if (data.code === 103) {
         router.push({ path: "/login" });
       }
       return Promise.reject(data);
@@ -52,7 +51,6 @@ axios.interceptors.response.use(
     }
   },
   error => {
-    ViewUI.LoadingBar.error();
     ViewUI.Message.error("网络错误，请重试");
     return Promise.reject(error);
   }
