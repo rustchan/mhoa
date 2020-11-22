@@ -163,6 +163,7 @@
                   size="small"
                   slot="extra"
                   @click.prevent="sw(def.id)"
+                  v-if="limits.indexOf('deviceswitch') !== -1"
                 >
                   {{ def.action }}
                 </Button>
@@ -188,6 +189,7 @@ export default {
   props: ["limits"],
   data() {
     return {
+      loading: false,
       tab: "info",
       isdrawer: false,
       pid: "0",
@@ -325,7 +327,8 @@ export default {
         }
       ],
       devicedef: [],
-      timer: 0
+      timer: 0,
+      timerload: 0
     };
   },
   methods: {
@@ -418,12 +421,10 @@ export default {
           this.deviceinfo[11].data = data.device.lasttime;
           this.devicedef = data.def;
           this.devicedef.forEach(def => {
-            if (def.datatype === "float") {
-              def.data = data.data[def.id].toFixed(def.datavalue);
-            } else def.data = data.data[def.id];
+            def.data = data.data[def.id];
             if (def.datatype === "bool") {
               def.value = def.datavalue.split(",")[def.data];
-              if (def.data) {
+              if (def.data === "1") {
                 def.action = def.datavalue.split(",")[0];
               } else {
                 def.action = def.datavalue.split(",")[1];
@@ -436,40 +437,39 @@ export default {
         });
     },
     sw(defid) {
-      let data = 1;
+      let data = "1";
       this.devicedef.forEach(def => {
         if (def.id === defid) {
-          if (def.data) data = 0;
+          if (def.data === "1") data = "0";
         }
       });
 
-      this.$http.post(
-        "/switch",
-        this.$qs.stringify({
-          part: defid,
-          data: data
-        })
-      );
-
-      this.devicedef.forEach((def, i) => {
-        if (def.id === defid) {
-          def.data = data;
-          def.value = def.datavalue.split(",")[def.data];
-          if (def.data) {
-            def.action = def.datavalue.split(",")[0];
-          } else {
-            def.action = def.datavalue.split(",")[1];
-          }
-          this.$set(this.devicedef, i, def);
-        }
-      });
+      this.$http
+        .post(
+          "/deviceswitch",
+          this.$qs.stringify({
+            did: this.did,
+            part: defid,
+            data: data
+          })
+        )
+        .then(() => {
+          this.devicedef.forEach((def, i) => {
+            if (def.id === defid) {
+              def.data = data;
+              def.value = def.datavalue.split(",")[def.data];
+              if (def.data === "1") {
+                def.action = def.datavalue.split(",")[0];
+              } else {
+                def.action = def.datavalue.split(",")[1];
+              }
+              this.$set(this.devicedef, i, def);
+            }
+          });
+        });
     },
     load() {
       this.dids = [];
-      this.$Message.loading({
-        content: "正在加载中...",
-        duration: 0
-      });
       this.$http
         .get("/devices", {
           params: {
@@ -481,11 +481,11 @@ export default {
           }
         })
         .then(data => {
-          this.$Message.destroy();
           this.tabledata = data.devices;
           this.pagetotal = data.pagetotal;
           this.products = data.products;
         });
+      if (this.timerload === 0) this.timerload = setInterval(this.load, 10000);
     }
   },
   mounted() {
@@ -502,6 +502,7 @@ export default {
   },
   beforeRouteLeave(to, from, next) {
     if (this.timer) clearInterval(this.timer);
+    clearInterval(this.timerload);
     this.isdrawer = false;
     next();
   }

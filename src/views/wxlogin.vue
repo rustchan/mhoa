@@ -1,3 +1,4 @@
+<template></template>
 <script>
 export default {
   name: "wxlogin",
@@ -12,9 +13,11 @@ export default {
       .then(data => {
         if (data.token) {
           this.$cookies.set("token", data.token, 0);
+          this.$Message.success("登录成功");
+          let path = this.$route.query.path;
+          if (path) this.$router.push(path);
+          else this.$router.push("/");
         }
-        this.$Message.success("登录成功");
-        this.$router.push("/");
       })
       .catch(() => {
         this.$router.push("/login");

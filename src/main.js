@@ -7,9 +7,11 @@ import axios from "axios";
 import qs from "qs";
 import ViewUI from "view-design";
 import "view-design/dist/styles/iview.css";
+import util from "./util";
 
 Vue.use(cookie);
 Vue.use(ViewUI);
+Vue.prototype.$util = util;
 Vue.prototype.$http = axios;
 Vue.prototype.$qs = qs;
 Vue.config.productionTip = false;

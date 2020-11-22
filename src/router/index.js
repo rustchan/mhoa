@@ -1,6 +1,7 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 import cookie from "vue-cookies";
+import util from "@/util";
 
 Vue.use(VueRouter);
 
@@ -65,14 +66,6 @@ const router = new VueRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  //跳转https
-  if (
-    location.protocol === "http:" &&
-    process.env.NODE_ENV === "production" &&
-    location.host.indexOf("mhiot.com") !== -1
-  ) {
-    location.href = "https://" + location.host + location.pathname;
-  }
   //检验token有效
   let token = cookie.get("token");
   if (token) {
@@ -95,8 +88,16 @@ router.beforeEach((to, from, next) => {
       if (token) {
         next();
       } else {
-        next("/login");
+        //微信授权登录
+        let code = util.getVar("code");
+        if (code !== "") {
+          next("/wxlogin?code=" + code + "&path=" + location.pathname);
+          break;
+        }
+        if (util.isWx()) util.wxAuth();
+        else next("/login");
       }
+      break;
   }
 });
 
