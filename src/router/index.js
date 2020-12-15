@@ -94,7 +94,7 @@ router.beforeEach((to, from, next) => {
           next("/wxlogin?code=" + code + "&path=" + location.pathname);
           break;
         }
-        if (util.isWx()) util.wxAuth();
+        if (util.isWxWork()) util.wxAuth();
         else next("/login");
       }
       break;

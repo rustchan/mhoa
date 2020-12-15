@@ -88,7 +88,11 @@
             <Tag color="warning">禁用</Tag>
           </template>
         </template>
-        <template slot-scope="{ row }" slot="action">
+        <template
+          slot-scope="{ row }"
+          slot="action"
+          v-if="limits.indexOf('device') !== -1"
+        >
           <a style="font-size: 14px;" @click="data(row.did)">查看</a>
         </template>
       </Table>
@@ -103,6 +107,7 @@
         show-total
         @on-change="pagenumchange"
         @on-page-size-change="pagesizechange"
+        transfer
       />
     </div>
     <Drawer
@@ -110,7 +115,6 @@
       v-model="isdrawer"
       width="350"
       :mask="false"
-      :styles="styles"
       @on-close="close"
     >
       <Tabs :animated="false" v-model="tab">
@@ -138,17 +142,6 @@
                   <Tag color="warning">禁用</Tag>
                 </template>
               </template>
-              <template v-else-if="index === 8">
-                <template v-if="row.data === 'device'">
-                  设备
-                </template>
-                <template v-else-if="row.data === 'subdevice'">
-                  子设备
-                </template>
-                <template v-else-if="row.data === 'gateway'">
-                  网关
-                </template>
-              </template>
               <template v-else>{{ row.data }}</template>
             </template>
           </Table>
@@ -157,7 +150,7 @@
           <template v-for="(def, i) in devicedef">
             <Card :key="i" style="margin-bottom: 20px;" :dis-hover="true">
               <p slot="title">{{ def.funcname }}</p>
-              <template v-if="def.issw">
+              <template v-if="def.functype === 'switch'">
                 <Button
                   type="info"
                   size="small"
@@ -224,8 +217,18 @@ export default {
         },
         {
           title: "产品名称",
-          minWidth: 150,
+          width: 160,
           key: "productname"
+        },
+        {
+          title: "产品类型",
+          width: 90,
+          key: "typename"
+        },
+        {
+          title: "联网方式",
+          width: 90,
+          key: "netmode"
         },
         {
           title: "固件",
@@ -235,17 +238,17 @@ export default {
         },
         {
           title: "IP地址",
-          minWidth: 140,
+          width: 140,
           key: "ip"
         },
         {
           title: "MAC地址",
-          minWidth: 150,
+          width: 150,
           key: "mac"
         },
         {
           title: "注册时间",
-          minWidth: 160,
+          width: 160,
           key: "regtime"
         },
         {
@@ -353,7 +356,7 @@ export default {
     del() {
       this.$http
         .post(
-          "/devicedel",
+          "/device/del",
           this.$qs.stringify({
             dids: this.dids.join(",")
           })
@@ -366,7 +369,7 @@ export default {
     disable() {
       this.$http
         .post(
-          "/devicedisable",
+          "/device/disable",
           this.$qs.stringify({
             dids: this.dids.join(",")
           })
@@ -379,7 +382,7 @@ export default {
     enable() {
       this.$http
         .post(
-          "/deviceenable",
+          "/device/enable",
           this.$qs.stringify({
             dids: this.dids.join(",")
           })
@@ -415,7 +418,7 @@ export default {
           this.deviceinfo[5].data = data.product.pid;
           this.deviceinfo[6].data = data.product.model;
           this.deviceinfo[7].data = data.product.productname;
-          this.deviceinfo[8].data = data.product.type;
+          this.deviceinfo[8].data = data.product.typename;
           this.deviceinfo[9].data = data.product.netmode;
           this.deviceinfo[10].data = data.device.regtime;
           this.deviceinfo[11].data = data.device.lasttime;
@@ -446,7 +449,7 @@ export default {
 
       this.$http
         .post(
-          "/deviceswitch",
+          "/device/switch",
           this.$qs.stringify({
             did: this.did,
             part: defid,

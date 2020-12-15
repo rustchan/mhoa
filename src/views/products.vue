@@ -81,17 +81,6 @@
             </template>
           </template>
         </template>
-        <template slot-scope="{ row }" slot="type">
-          <template v-if="row.type === 'device'">
-            设备
-          </template>
-          <template v-else-if="row.type === 'subdevice'">
-            子设备
-          </template>
-          <template v-else-if="row.type === 'gateway'">
-            网关
-          </template>
-        </template>
         <template slot-scope="{ row }" slot="action">
           <Button type="primary" size="small" @click="product(row.pid)">
             查看
@@ -109,6 +98,7 @@
         show-total
         @on-change="pagenumchange"
         @on-page-size-change="pagesizechange"
+        transfer
       />
     </div>
   </div>
@@ -159,8 +149,7 @@ export default {
         {
           title: "产品类型",
           width: 90,
-          slot: "type",
-          align: "center"
+          key: "typename"
         },
         {
           title: "联网方式",
@@ -175,13 +164,14 @@ export default {
           align: "center"
         },
         {
-          title: "注册时间",
-          width: 150,
+          title: "添加时间",
+          minWidth: 160,
           key: "addtime"
         },
         {
           title: "操作",
-          slot: "action"
+          slot: "action",
+          fixed: "right"
         }
       ],
       tabledata: []

@@ -19,14 +19,6 @@
         >
           添加
         </Button>
-        <Button
-          type="info"
-          icon="md-list"
-          v-if="limits.indexOf('ota') !== -1"
-          @click="ota"
-        >
-          查看
-        </Button>
         <Button icon="md-refresh" @click="load">刷新</Button>
       </div>
       <div class="search">
@@ -107,6 +99,7 @@
         show-total
         @on-change="pagenumchange"
         @on-page-size-change="pagesizechange"
+        transfer
       />
     </div>
     <Modal
@@ -129,7 +122,8 @@
               :value="product.pid"
               :key="product.pid"
             >
-              {{ product.productname }} - {{ product.model }}
+              {{ product.pid }} - {{ product.productname }} -
+              {{ product.model }}
             </Option>
           </Select>
         </FormItem>
@@ -144,6 +138,7 @@
             :data="updata"
             :on-success="upok"
             :on-error="uperr"
+            :headers="{ token: token }"
           >
             <Button>
               <span v-if="addform.file !== ''">重新</span>上传固件
@@ -185,7 +180,7 @@
             :remote-method="checkdevice"
           >
             <Option v-for="(device, i) in devices" :value="device.did" :key="i">
-              {{ device.did }} - {{ device.ver }} - {{ device.devicename }}
+              {{ device.did }} - {{ device.ver }}
             </Option>
           </Select>
         </FormItem>
@@ -235,6 +230,7 @@
 </template>
 
 <script>
+import cookie from "vue-cookies";
 export default {
   name: "otas",
   props: ["limits"],
@@ -252,9 +248,10 @@ export default {
       tableheight: 0,
       tabletitle: [
         {
-          title: "产品型号",
-          width: 100,
-          key: "model"
+          title: "产品编号",
+          width: 90,
+          key: "pid",
+          align: "center"
         },
         {
           title: "版本号",
@@ -269,10 +266,9 @@ export default {
           align: "center"
         },
         {
-          title: "产品编号",
-          width: 90,
-          key: "pid",
-          align: "center"
+          title: "产品型号",
+          width: 100,
+          key: "model"
         },
         {
           title: "产品名称",
@@ -281,12 +277,15 @@ export default {
         },
         {
           title: "添加时间",
-          width: 150,
+          minWidth: 160,
           key: "addtime"
         },
         {
           title: "操作",
-          slot: "action"
+          width: 200,
+          slot: "action",
+          align: "center",
+          fixed: "right"
         }
       ],
       tabledata: [],
@@ -373,6 +372,11 @@ export default {
       }
     };
   },
+  computed: {
+    token() {
+      return cookie.get("token");
+    }
+  },
   methods: {
     updatetime(time) {
       this.updateform.updatetime = time;
@@ -383,7 +387,7 @@ export default {
           this.updating = true;
           this.$http
             .post(
-              "/otaupdate",
+              "/ota/update",
               this.$qs.stringify(
                 {
                   otaid: this.otaid,
@@ -413,7 +417,7 @@ export default {
         }
       });
       this.$http
-        .get("/devicever", {
+        .get("/ota/ver", {
           params: {
             pid: this.otapid
           }
@@ -464,7 +468,7 @@ export default {
           this.checking = true;
           this.$http
             .post(
-              "/otacheck",
+              "/ota/check",
               this.$qs.stringify(
                 {
                   otaid: this.otaid,
@@ -495,7 +499,7 @@ export default {
         }
       });
       this.$http
-        .get("/devicever", {
+        .get("/ota/ver", {
           params: {
             pid: this.otapid
           }
@@ -523,7 +527,7 @@ export default {
           this.adding = true;
           this.$http
             .post(
-              "/otaadd",
+              "/ota/add",
               this.$qs.stringify({
                 pid: this.addform.pid,
                 ver: this.addform.ver,
@@ -546,7 +550,7 @@ export default {
     del() {
       this.$http
         .post(
-          "/otadel",
+          "/ota/del",
           this.$qs.stringify({
             otaid: this.otaid
           })
@@ -579,7 +583,6 @@ export default {
       this.otaid = row.otaid;
     },
     load() {
-      this.$Loading.start();
       this.$http
         .get("/otas", {
           params: {
@@ -589,7 +592,6 @@ export default {
           }
         })
         .then(data => {
-          this.$Loading.finish();
           this.otaid = 0;
           this.tabledata = data.otas;
           this.pagetotal = data.pagetotal;

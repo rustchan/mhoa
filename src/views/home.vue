@@ -117,6 +117,10 @@ td button {
   align-items: center;
   justify-content: space-between;
 }
+.tags {
+  height: 36px;
+  overflow: hidden;
+}
 .tagmenu {
   width: 30px;
 }
@@ -230,16 +234,17 @@ td button {
     <Layout style="overflow: hidden;">
       <Header class="layout-header-bar no-select">
         <Row>
-          <Col span="12">
+          <Col span="6">
             <Icon
               @click.native="collapsedSider"
               :class="rotateIcon"
               type="md-menu"
               size="28"
               style="margin-left: 20px;cursor: pointer;"
+              v-if="!this.$util.isMobile()"
             ></Icon>
           </Col>
-          <Col span="12" class="topnav">
+          <Col span="18" class="topnav">
             <Button
               type="primary"
               icon="md-expand"
@@ -247,6 +252,7 @@ td button {
               @click="full"
               title="全屏"
               style="margin-right: 20px;"
+              v-if="!this.$util.isWx() && !this.$util.isMobile()"
             ></Button>
             <Dropdown @on-click="dropdown">
               <Button type="primary" size="large">
@@ -329,7 +335,7 @@ import screenfull from "screenfull";
 export default {
   data() {
     return {
-      isCollapsed: true,
+      isCollapsed: this.$util.isMobile(),
       isFullscreen: false,
       activename: "",
       opennames: [],

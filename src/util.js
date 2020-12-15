@@ -5,6 +5,19 @@ const util = {
     else return false;
   },
 
+  //是否在企业微信中
+  isWxWork() {
+    if (navigator.userAgent.indexOf("wxwork") > 0) return true;
+    else return false;
+  },
+
+  //是否是手机
+  isMobile() {
+    if (navigator.userAgent.indexOf("iPhone") > 0) return true;
+    if (navigator.userAgent.indexOf("Android") > 0) return true;
+    false;
+  },
+
   //企业微信授权
   wxAuth() {
     let wxcorpid = process.env.VUE_APP_WXCORPID;
