@@ -165,7 +165,7 @@
         label-position="top"
       >
         <FormItem label="待升级版本号" prop="vers" class="formitem">
-          <Select v-model="checkform.vers" multiple filterable="true">
+          <Select v-model="checkform.vers" multiple :filterable="true">
             <Option v-for="(ver, i) in vers" :value="ver" :key="i">
               {{ ver }}
             </Option>
@@ -176,7 +176,7 @@
             v-model="checkform.dids"
             multiple
             remote
-            filterable="true"
+            :filterable="true"
             :remote-method="checkdevice"
           >
             <Option v-for="(device, i) in devices" :value="device.did" :key="i">
@@ -204,7 +204,7 @@
         label-position="top"
       >
         <FormItem label="待升级版本号" prop="vers" class="formitem">
-          <Select v-model="updateform.vers" multiple filterable="true">
+          <Select v-model="updateform.vers" multiple :filterable="true">
             <Option v-for="(ver, i) in vers" :value="ver" :key="i">
               {{ ver }}
             </Option>

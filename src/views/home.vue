@@ -60,7 +60,7 @@ td button {
 .menu-item span {
   display: inline-block;
   overflow: hidden;
-  width: 69px;
+  width: 100px;
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: bottom;
@@ -152,7 +152,7 @@ td button {
       :collapsed-width="78"
       v-model.trim="isCollapsed"
       class="sider no-select"
-      width="150"
+      width="180"
     >
       <Menu
         :active-name="activename"
@@ -374,7 +374,6 @@ export default {
   //初始化
   created() {
     this.$http.get("/menu").then(data => {
-      console.log(data.menus);
       this.menus = data.menus;
       this.limits = data.limits;
       this.name = data.name;

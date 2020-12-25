@@ -1,5 +1,5 @@
 <template>
-  <div>{{ agent }}</div>
+  <div></div>
 </template>
 
 <script>
@@ -7,7 +7,6 @@ export default {
   name: "index",
   data() {
     return {
-      agent: navigator.userAgent,
       name: []
     };
   },

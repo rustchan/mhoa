@@ -41,8 +41,8 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(
   response => {
     let data = response.data;
-    if (data.code > 0) {
-      if (data.msg) ViewUI.Message.error(data.msg);
+    if (data.code !== 0) {
+      if (data.msg && data.code !== 103) ViewUI.Message.error(data.msg);
       if (data.code === 103) {
         router.push({ path: "/login" });
       }

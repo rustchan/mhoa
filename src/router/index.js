@@ -22,6 +22,16 @@ const routes = [
     component: () => import("../views/home.vue"),
     children: [
       {
+        path: "wxmpmenu",
+        name: "wxmpmenu",
+        component: () => import("../views/wxmpmenu.vue")
+      },
+      {
+        path: "wxcorpmenu",
+        name: "wxcorpmenu",
+        component: () => import("../views/wxcorpmenu.vue")
+      },
+      {
         path: "devices",
         name: "devices",
         component: () => import("../views/devices.vue")
