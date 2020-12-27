@@ -5,6 +5,13 @@ import util from "@/util";
 
 Vue.use(VueRouter);
 
+//获取原型对象上的push函数
+const originalPush = VueRouter.prototype.push;
+//修改原型对象中的push方法
+VueRouter.prototype.push = function push(location) {
+  return originalPush.call(this, location).catch(err => err);
+};
+
 const routes = [
   {
     path: "/login",
@@ -42,7 +49,7 @@ const routes = [
         component: () => import("../views/otas.vue")
       },
       {
-        path: "ota/:otaid",
+        path: "ota",
         name: "ota",
         component: () => import("../views/ota.vue")
       },
@@ -50,6 +57,11 @@ const routes = [
         path: "products",
         name: "products",
         component: () => import("../views/products.vue")
+      },
+      {
+        path: "productdef",
+        name: "productdef",
+        component: () => import("../views/productdef.vue")
       },
       {
         path: "index",

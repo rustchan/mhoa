@@ -28,7 +28,7 @@ td button {
   right: 20px;
 }
 .formitem {
-  margin-bottom: 30px;
+  margin-bottom: 22px;
 }
 </style>
 <style scoped>
@@ -323,7 +323,11 @@ td button {
         </div>
         <div class="content">
           <keep-alive>
-            <router-view :limits="limits"></router-view>
+            <router-view
+              :limits="limits"
+              :id="id"
+              @sidemenu="sidemenu"
+            ></router-view>
           </keep-alive>
         </div>
       </Content>
@@ -341,6 +345,7 @@ export default {
       opennames: [],
       menus: [],
       limits: [],
+      id: 0,
       name: "",
       avatar: ""
     };
@@ -494,7 +499,8 @@ export default {
       localStorage.tags = JSON.stringify(tags);
     },
     //点击导航菜单
-    sidemenu(name) {
+    sidemenu(name, id) {
+      if (id > 0) this.id = id;
       let tagnum = 0;
       if (this.tags.length > 0) tagnum = this.tags[this.tags.length - 1].num;
       this.activename = name;

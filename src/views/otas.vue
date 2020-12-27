@@ -29,7 +29,7 @@
             :value="product.pid"
             :key="product.pid"
           >
-            {{ product.productname }}
+            {{ product.pid }}-{{ product.productname }}
           </Option>
         </Select>
       </div>

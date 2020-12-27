@@ -56,6 +56,7 @@
         highlight-row
         :height="tableheight"
         @on-current-change="select"
+        @on-row-dblclick="edit"
         size="small"
       >
         <template slot-scope="{ row }" slot="status">
@@ -68,7 +69,7 @@
         </template>
         <template slot-scope="{ row }" slot="reg">
           <i-switch
-            v-if="limits.indexOf('productreg') !== -1"
+            v-if="limits.includes('productreg')"
             :value="row.isreg"
             @on-change="reg($event, row.pid)"
           />
@@ -82,8 +83,8 @@
           </template>
         </template>
         <template slot-scope="{ row }" slot="action">
-          <Button type="primary" size="small" @click="product(row.pid)">
-            查看
+          <Button type="primary" size="small" @click="def(row.pid)">
+            定义
           </Button>
         </template>
       </Table>
@@ -101,15 +102,147 @@
         transfer
       />
     </div>
+    <Modal
+      v-model="isadd"
+      :mask-closable="false"
+      title="产品"
+      width="600"
+      @on-cancel="addClose"
+      transfer
+    >
+      <Form
+        :model="addform"
+        :rules="addformrules"
+        ref="addform"
+        label-position="right"
+        :label-width="80"
+      >
+        <FormItem label="产品名称" prop="name" class="formitem">
+          <Input v-model="addform.name"></Input>
+        </FormItem>
+        <Row>
+          <Col span="12">
+            <FormItem label="产品类型" prop="type" class="formitem">
+              <Select v-model="addform.type" style="width: 200px;">
+                <Option
+                  v-for="type in types"
+                  :value="type.type"
+                  :key="type.type"
+                >
+                  {{ type.typename }}
+                </Option>
+              </Select>
+            </FormItem>
+          </Col>
+          <Col span="12">
+            <FormItem label="产品型号" prop="model" class="formitem">
+              <Input v-model="addform.model" style="width: 200px;"></Input>
+            </FormItem>
+          </Col>
+        </Row>
+        <Row>
+          <Col span="12">
+            <FormItem label="联网方式" prop="netmode" class="formitem">
+              <Select v-model="addform.netmode" style="width: 200px;">
+                <Option value="WiFi">WiFi</Option>
+                <Option value="ZigBee">ZigBee</Option>
+                <Option value="Bluetooth">蓝牙</Option>
+                <Option value="LAN">LAN</Option>
+                <Option value="LAN,WiFi">LAN,WiFi</Option>
+              </Select>
+            </FormItem>
+          </Col>
+          <Col span="12">
+            <FormItem label="配网IP" prop="ip" class="formitem">
+              <Input v-model="addform.ip" style="width: 200px;"></Input>
+            </FormItem>
+          </Col>
+        </Row>
+        <FormItem label="所属应用" prop="appids" class="formitem">
+          <CheckboxGroup v-model="addform.appids" @on-change="appChange">
+            <Checkbox
+              v-for="app in apps"
+              :label="app.appid"
+              :key="app.appid"
+              border
+            >
+              {{ app.appname }}
+            </Checkbox>
+          </CheckboxGroup>
+        </FormItem>
+        <FormItem label="产品分类" prop="catid" class="formitem">
+          <Select v-model="addform.catid" style="width: 200px;">
+            <Option
+              v-for="cat in cats"
+              :value="cat.catid"
+              :key="cat.catid"
+              :disabled="!cat.iscat"
+            >
+              {{ cat.catname }}
+            </Option>
+          </Select>
+        </FormItem>
+        <FormItem label="产品图标" prop="img" class="formitem">
+          <img
+            :src="imgurl + '/' + addform.img"
+            width="100"
+            height="100"
+            v-if="addform.img"
+          />
+          <Upload
+            :action="action"
+            :format="['png', 'jpg', 'jpeg']"
+            :show-upload-list="false"
+            :on-success="upimgok"
+            :on-error="uperr"
+            :headers="{ token: token }"
+          >
+            <Button>上传图标</Button>
+          </Upload>
+        </FormItem>
+        <FormItem label="配网提示" prop="reset" class="formitem">
+          <Input v-model="addform.reset"></Input>
+        </FormItem>
+        <FormItem label="配网图片" prop="resetimg" class="formitem">
+          <img
+            :src="imgurl + '/' + addform.resetimg"
+            width="300"
+            v-if="addform.resetimg"
+          />
+          <Upload
+            :action="action"
+            :format="['png', 'jpg', 'jpeg']"
+            :show-upload-list="false"
+            :on-success="upresetimgok"
+            :on-error="uperr"
+            :headers="{ token: token }"
+          >
+            <Button>上传图片</Button>
+          </Upload>
+        </FormItem>
+        <FormItem label="小米Type" prop="ptype" class="formitem">
+          <Input v-model="addform.ptype"></Input>
+        </FormItem>
+      </Form>
+      <template slot="footer">
+        <Button type="text" @click="addClose">取消</Button>
+        <Button type="primary" @click="save" :loading="isadding">
+          <template v-if="pid === 0">创建</template>
+          <template v-else>保存</template>
+        </Button>
+      </template>
+    </Modal>
   </div>
 </template>
 
 <script>
+import cookie from "vue-cookies";
 export default {
   name: "otas",
   props: ["limits"],
   data() {
     return {
+      action: process.env.VUE_APP_API + "/upload",
       pid: 0,
       search: "pid",
       keyword: "",
@@ -153,7 +286,7 @@ export default {
         },
         {
           title: "联网方式",
-          width: 90,
+          width: 120,
           key: "netmode",
           align: "center"
         },
@@ -164,18 +297,87 @@ export default {
           align: "center"
         },
         {
-          title: "添加时间",
+          title: "产品密钥",
+          width: 150,
+          key: "pkey",
+          align: "center"
+        },
+        {
+          title: "创建时间",
           minWidth: 160,
           key: "addtime"
         },
         {
           title: "操作",
           slot: "action",
-          fixed: "right"
+          fixed: "right",
+          width: 100,
+          align: "center"
         }
       ],
-      tabledata: []
+      tabledata: [],
+      isadd: false,
+      addform: {
+        name: "",
+        model: "",
+        type: "",
+        netmode: "",
+        ip: "",
+        appids: [],
+        catid: 0,
+        ptype: "",
+        img: "",
+        reset: "",
+        resetimg: ""
+      },
+      addformrules: {
+        name: [
+          {
+            type: "string",
+            required: true,
+            message: "请输入产品名称"
+          }
+        ],
+        type: [
+          {
+            type: "string",
+            required: true,
+            message: "请选择产品类型"
+          }
+        ],
+        model: [
+          {
+            type: "string",
+            required: true,
+            message: "请输入产品型号"
+          }
+        ],
+        netmode: [
+          {
+            type: "string",
+            required: true,
+            message: "请选择联网方式"
+          }
+        ],
+        img: [
+          {
+            type: "string",
+            required: true,
+            message: "请上传产品图标"
+          }
+        ]
+      },
+      cats: [],
+      types: [],
+      apps: [],
+      isadding: false,
+      imgurl: ""
     };
+  },
+  computed: {
+    token() {
+      return cookie.get("token");
+    }
   },
   methods: {
     pagenumchange(page) {
@@ -196,7 +398,7 @@ export default {
     reg(isreg, pid) {
       this.$http
         .post(
-          "/productreg",
+          "/product/reg",
           this.$qs.stringify({
             pid: pid,
             isreg: isreg
@@ -209,7 +411,7 @@ export default {
     prod() {
       this.$http
         .post(
-          "/productprod",
+          "/product/prod",
           this.$qs.stringify({
             pid: this.pid
           })
@@ -218,6 +420,125 @@ export default {
           this.$Message.success("发布成功");
           this.load();
         });
+    },
+    add() {
+      this.pid = 0;
+      this.isadd = true;
+    },
+    edit(row) {
+      if (row.pid === undefined) {
+        if (this.pid === 0) {
+          this.$Message.error("请选择产品");
+          return;
+        }
+        this.tabledata.forEach(prod => {
+          if (prod.pid === this.pid) {
+            row = prod;
+          }
+        });
+      }
+      this.addform.name = row.productname;
+      this.addform.model = row.model;
+      this.addform.type = row.type;
+      this.addform.netmode = row.netmode;
+      this.addform.appids = [];
+      row.appids.split(",").forEach(appid => {
+        this.addform.appids.unshift(Number(appid));
+      });
+      this.appChange(this.addform.appids);
+      this.addform.catid = row.catid;
+      this.addform.img = row.img;
+      this.addform.ip = row.ip;
+      this.addform.reset = row.reset;
+      this.addform.resetimg = row.resetimg;
+      this.addform.ptype = row.ptype;
+      this.isadd = true;
+    },
+    addClose() {
+      this.$refs.addform.resetFields();
+      this.isadd = false;
+    },
+    appChange(appids) {
+      this.cats.forEach(cat => {
+        cat.iscat = false;
+        cat.appids.split(",").forEach(appid => {
+          if (appids.includes(Number(appid))) {
+            cat.iscat = true;
+          }
+        });
+      });
+    },
+    upimgok(res) {
+      if (res.code > 0) {
+        this.$Message.error(res.msg);
+        return;
+      }
+      this.addform.img = res.path;
+    },
+    upresetimgok(res) {
+      if (res.code > 0) {
+        this.$Message.error(res.msg);
+        return;
+      }
+      this.addform.resetimg = res.path;
+    },
+    uperr() {
+      this.$Message.error("上传失败");
+    },
+    save() {
+      this.$refs.addform.validate(valid => {
+        if (valid) {
+          this.isadding = true;
+          let action = "add";
+          if (this.pid > 0) action = "edit";
+          this.$http
+            .post(
+              "/product/" + action,
+              this.$qs.stringify({
+                pid: this.pid,
+                name: this.addform.name,
+                type: this.addform.type,
+                model: this.addform.model,
+                netmode: this.addform.netmode,
+                ip: this.addform.ip,
+                appids: this.addform.appids.join(","),
+                catid: this.addform.catid,
+                img: this.addform.img,
+                reset: this.addform.reset,
+                resetimg: this.addform.resetimg,
+                ptype: this.addform.ptype
+              })
+            )
+            .then(() => {
+              this.load();
+              this.addClose();
+              this.isadding = false;
+            })
+            .catch(() => {
+              this.isadding = false;
+            });
+        }
+      });
+    },
+    del() {
+      if (this.pid === 0) {
+        this.$Message.error("请选择产品");
+        return;
+      }
+      this.$http
+        .post(
+          "/product/del",
+          this.$qs.stringify({
+            pid: this.pid
+          })
+        )
+        .then(() => {
+          this.load();
+        });
+    },
+    def(pid) {
+      this.$emit("sidemenu", "productdef", pid);
+      this.load();
     },
     load() {
       this.$http
@@ -233,6 +554,10 @@ export default {
           this.pid = 0;
           this.tabledata = data.products;
           this.pagetotal = data.pagetotal;
+          this.cats = data.cats;
+          this.types = data.types;
+          this.apps = data.apps;
+          this.imgurl = data.imgurl;
         });
     }
   },
