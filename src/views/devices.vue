@@ -1,6 +1,6 @@
 <template>
   <div class="device">
-    <div class="tool">
+    <div class="tool" ref="tool">
       <div class="btn">
         <Poptip
           confirm
@@ -72,6 +72,7 @@
         stripe
         :height="tableheight"
         @on-selection-change="selectchange"
+        @on-row-dblclick="device"
         size="small"
       >
         <template slot-scope="{ row }" slot="status">
@@ -87,6 +88,9 @@
           <template v-if="row.status === 'disable'">
             <Tag color="warning">禁用</Tag>
           </template>
+          <template v-if="row.status === 'ota'">
+            <Tag color="warning">升级中</Tag>
+          </template>
         </template>
         <template
           slot-scope="{ row }"
@@ -97,12 +101,13 @@
         </template>
       </Table>
     </div>
-    <div class="page">
+    <div class="status">
       <Page
         :total="pagetotal"
         :page-size-opts="[30, 50, 100]"
         :page-size="pagesize"
         :current="pagenum"
+        class-name="page"
         show-sizer
         show-total
         @on-change="pagenumchange"
@@ -140,6 +145,9 @@
                 </template>
                 <template v-if="row.data === 'disable'">
                   <Tag color="warning">禁用</Tag>
+                </template>
+                <template v-if="row.data === 'ota'">
+                  <Tag color="warning">升级中</Tag>
                 </template>
               </template>
               <template v-else>{{ row.data }}</template>
@@ -206,7 +214,7 @@ export default {
         },
         {
           title: "设备状态",
-          width: 90,
+          width: 100,
           align: "center",
           slot: "status"
         },
@@ -396,10 +404,13 @@ export default {
       clearInterval(this.timer);
       this.timer = 0;
     },
+    device(row) {
+      if (row.did > 0) this.data(row.did);
+    },
     data(did) {
       if (did > 0) {
         this.did = did;
-        if (this.timer === 0) this.timer = setInterval(this.data, 5000);
+        if (this.timer === 0) this.timer = setInterval(this.data, 2000);
         this.tab = "info";
       } else did = this.did;
       this.isdrawer = true;
@@ -492,11 +503,15 @@ export default {
     }
   },
   mounted() {
-    this.tableheight = document.body.clientHeight - 210;
+    this.$nextTick(() => {
+      this.tableheight =
+        document.body.clientHeight - 160 - this.$refs.tool.offsetHeight;
+    });
     const that = this;
     window.onresize = () => {
       return (() => {
-        that.tableheight = document.body.clientHeight - 210;
+        that.tableheight =
+          document.body.clientHeight - 160 - this.$refs.tool.offsetHeight;
       })();
     };
   },

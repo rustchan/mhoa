@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="tool">
+    <div class="tool" ref="tool">
       <div class="btn">
         <Poptip
           confirm
@@ -89,12 +89,13 @@
         </template>
       </Table>
     </div>
-    <div class="page">
+    <div class="status">
       <Page
         :total="pagetotal"
         :page-size-opts="[30, 50, 100]"
         :page-size="pagesize"
         :current="pagenum"
+        class-name="page"
         show-sizer
         show-total
         @on-change="pagenumchange"
@@ -600,11 +601,15 @@ export default {
     }
   },
   mounted() {
-    this.tableheight = document.body.clientHeight - 210;
+    this.$nextTick(() => {
+      this.tableheight =
+        document.body.clientHeight - 160 - this.$refs.tool.offsetHeight;
+    });
     const that = this;
     window.onresize = () => {
       return (() => {
-        that.tableheight = document.body.clientHeight - 210;
+        that.tableheight =
+          document.body.clientHeight - 160 - this.$refs.tool.offsetHeight;
       })();
     };
   },

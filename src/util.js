@@ -15,7 +15,7 @@ const util = {
   isMobile() {
     if (navigator.userAgent.indexOf("iPhone") > 0) return true;
     if (navigator.userAgent.indexOf("Android") > 0) return true;
-    false;
+    return false;
   },
 
   //企业微信授权
@@ -41,6 +41,13 @@ const util = {
       }
     }
     return "";
+  },
+
+  //获取月份
+  getMonth() {
+    let month = new Date().getMonth() + 1;
+    if (month < 10) month = "0" + month;
+    return month;
   }
 };
 

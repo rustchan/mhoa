@@ -10,6 +10,15 @@ export default {
       name: []
     };
   },
-  created() {}
+  methods: {
+    load() {
+      this.$http.get("/index").then(data => {
+        console.log(data);
+      });
+    }
+  },
+  created() {
+    this.load();
+  }
 };
 </script>

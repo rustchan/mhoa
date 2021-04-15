@@ -74,6 +74,11 @@ const routes = [
         component: () => import("../views/index.vue")
       },
       {
+        path: "material",
+        name: "material",
+        component: () => import("../views/material.vue")
+      },
+      {
         path: "*",
         name: "404",
         redirect: "/"

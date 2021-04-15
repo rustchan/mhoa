@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="tool">
+    <div class="tool" ref="tool">
       <div class="btn">
         <Poptip
           confirm
@@ -89,12 +89,13 @@
         </template>
       </Table>
     </div>
-    <div class="page">
+    <div class="status">
       <Page
         :total="pagetotal"
         :page-size-opts="[30, 50, 100]"
         :page-size="pagesize"
         :current="pagenum"
+        class-name="page"
         show-sizer
         show-total
         @on-change="pagenumchange"
@@ -123,7 +124,10 @@
         <Row>
           <Col span="12">
             <FormItem label="产品类型" prop="type" class="formitem">
-              <Select v-model="addform.type" style="width: 200px;">
+              <Select
+                v-model="addform.type"
+                :disabled="addform.status === 'prod'"
+              >
                 <Option
                   v-for="type in types"
                   :value="type.type"
@@ -136,14 +140,20 @@
           </Col>
           <Col span="12">
             <FormItem label="产品型号" prop="model" class="formitem">
-              <Input v-model="addform.model" style="width: 200px;"></Input>
+              <Input
+                v-model="addform.model"
+                :disabled="addform.status === 'prod'"
+              ></Input>
             </FormItem>
           </Col>
         </Row>
         <Row>
           <Col span="12">
             <FormItem label="联网方式" prop="netmode" class="formitem">
-              <Select v-model="addform.netmode" style="width: 200px;">
+              <Select
+                v-model="addform.netmode"
+                :disabled="addform.status === 'prod'"
+              >
                 <Option value="WiFi">WiFi</Option>
                 <Option value="ZigBee">ZigBee</Option>
                 <Option value="Bluetooth">蓝牙</Option>
@@ -154,7 +164,7 @@
           </Col>
           <Col span="12">
             <FormItem label="配网IP" prop="ip" class="formitem">
-              <Input v-model="addform.ip" style="width: 200px;"></Input>
+              <Input v-model="addform.ip"></Input>
             </FormItem>
           </Col>
         </Row>
@@ -221,7 +231,10 @@
           </Upload>
         </FormItem>
         <FormItem label="小米Type" prop="ptype" class="formitem">
-          <Input v-model="addform.ptype"></Input>
+          <Input
+            v-model="addform.ptype"
+            :disabled="addform.status === 'prod'"
+          ></Input>
         </FormItem>
       </Form>
       <template slot="footer">
@@ -328,7 +341,8 @@ export default {
         ptype: "",
         img: "",
         reset: "",
-        resetimg: ""
+        resetimg: "",
+        status: "dev"
       },
       addformrules: {
         name: [
@@ -423,6 +437,7 @@ export default {
     },
     add() {
       this.pid = 0;
+      this.addform.status = "dev";
       this.isadd = true;
     },
     edit(row) {
@@ -452,6 +467,7 @@ export default {
       this.addform.reset = row.reset;
       this.addform.resetimg = row.resetimg;
       this.addform.ptype = row.ptype;
+      this.addform.status = row.status;
       this.isadd = true;
     },
     addClose() {
@@ -562,11 +578,15 @@ export default {
     }
   },
   mounted() {
-    this.tableheight = document.body.clientHeight - 210;
+    this.$nextTick(() => {
+      this.tableheight =
+        document.body.clientHeight - 160 - this.$refs.tool.offsetHeight;
+    });
     const that = this;
     window.onresize = () => {
       return (() => {
-        that.tableheight = document.body.clientHeight - 210;
+        that.tableheight =
+          document.body.clientHeight - 160 - this.$refs.tool.offsetHeight;
       })();
     };
   },

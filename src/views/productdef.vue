@@ -146,10 +146,16 @@
           <Input v-model="addform.unit"></Input>
         </FormItem>
         <FormItem label="小米siid" prop="siid" class="formitem">
-          <Input v-model="addform.siid"></Input>
+          <Input
+            v-model="addform.siid"
+            :disabled="defid > 0 && status === 'prod'"
+          ></Input>
         </FormItem>
         <FormItem label="小米piid" prop="piid" class="formitem">
-          <Input v-model="addform.piid"></Input>
+          <Input
+            v-model="addform.piid"
+            :disabled="defid > 0 && status === 'prod'"
+          ></Input>
         </FormItem>
       </Form>
       <template slot="footer">
@@ -446,6 +452,7 @@ export default {
     }
   },
   created() {
+    this.pid = this.id;
     this.load();
   }
 };

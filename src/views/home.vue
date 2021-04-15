@@ -6,7 +6,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 50px;
+  min-height: 50px;
+  overflow-x: hidden;
 }
 .btn button,
 td button {
@@ -17,15 +18,28 @@ td button {
 }
 .search {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   align-items: center;
   padding-right: 15px;
 }
-.page {
-  position: fixed;
+.search > *,
+.btn > * {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+.status {
+  position: relative;
   bottom: 0;
-  height: 40px;
-  right: 20px;
+  height: 50px;
+  left: 15px;
+  right: 0;
+  display: flex;
+  align-items: center;
+}
+.page {
+  margin-left: auto;
+  padding-right: 20px;
 }
 .formitem {
   margin-bottom: 22px;
@@ -326,6 +340,7 @@ td button {
             <router-view
               :limits="limits"
               :id="id"
+              :imgurl="imgurl"
               @sidemenu="sidemenu"
             ></router-view>
           </keep-alive>
@@ -347,7 +362,8 @@ export default {
       limits: [],
       id: 0,
       name: "",
-      avatar: ""
+      avatar: "",
+      imgurl: ""
     };
   },
   computed: {
@@ -383,6 +399,7 @@ export default {
       this.limits = data.limits;
       this.name = data.name;
       this.avatar = data.avatar;
+      this.imgurl = data.imgurl;
       let path = this.$route.path;
       let activename = "index";
       if (path !== "/") activename = path.slice(1);
@@ -425,6 +442,7 @@ export default {
       height: 3
     });
   },
+  mounted() {},
   methods: {
     collapsedSider() {
       this.$refs.side.toggleCollapse();
